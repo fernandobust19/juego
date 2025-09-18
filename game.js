@@ -4,11 +4,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const { Engine, Render, Runner, Bodies, Composite, Mouse, MouseConstraint, Events, Body, Vertices } = Matter;
 
     // --- Configuración del Escenario ---
-    const canvasWidth = 400; // Ancho reducido para adaptarse a móviles
-    const canvasHeight = 600; // Altura mantenida para un formato vertical
-
     // Crear el motor de física
-    const engine = Engine.create();
+    const engine = Engine.create({
+        // Aumentamos las iteraciones para hacer la simulación más estable y rígida,
+        // lo que previene la deformación de las figuras.
+        positionIterations: 10,
+        velocityIterations: 8
+    });
     const world = engine.world;
 
     // Crear el renderizador que dibujará en el canvas
@@ -16,8 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         element: document.body,
         engine: engine,
         options: {
-            width: canvasWidth,
-            height: canvasHeight,
+            // El tamaño se establecerá dinámicamente para ser adaptable
             wireframes: false, // Para que las figuras tengan colores sólidos
             background: '#ffffff'
         }
@@ -29,21 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const runner = Runner.create();
     Runner.run(runner, engine);
 
-    // --- Creación de los Cuerpos (Figuras y Límites) ---
-
-    // Crear el suelo y las paredes para que las figuras no se caigan
-    const wallOptions = {
-        isStatic: true, // Estático: no se mueve por la gravedad
-        render: { fillStyle: '#f0f2f5' } // Color que coincide con el fondo
-    };
-    Composite.add(world, [
-        // Suelo
-        Bodies.rectangle(canvasWidth / 2, canvasHeight, canvasWidth, 50, wallOptions),
-        // Pared izquierda
-        Bodies.rectangle(0, canvasHeight / 2, 50, canvasHeight, wallOptions),
-        // Pared derecha
-        Bodies.rectangle(canvasWidth, canvasHeight / 2, 50, canvasHeight, wallOptions)
-    ]);
+    // --- Creación de los Cuerpos ---
+    // Variables para guardar las paredes y poder actualizarlas
+    let ground, wallLeft, wallRight;
+    const wallThickness = 50; // Grosor de las paredes invisibles
 
     // Paleta de colores para las figuras
     const colores = [
@@ -54,8 +44,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Función para obtener un color aleatorio
     const getRandomColor = () => colores[Math.floor(Math.random() * colores.length)];
 
-    // Función para obtener una posición X aleatoria dentro del canvas
-    const getRandomX = () => Math.random() * (canvasWidth - 100) + 50;
+    // Función para obtener una posición X aleatoria dentro del canvas actual
+    const getRandomX = () => Math.random() * (render.options.width - 100) + 50;
 
     // Crear las 10 figuras geométricas
     const figuras = [];
@@ -152,11 +142,30 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Ajustar el canvas al tamaño de la ventana
-    function resizeCanvas() {
-        // Esta función puede expandirse en el futuro para un redimensionamiento dinámico
-        // Por ahora, el tamaño fijo funciona bien para el objetivo.
+    function setupResponsiveCanvas() {
+        // Ajustar el tamaño del renderizador al de la ventana
+        render.canvas.width = window.innerWidth;
+        render.canvas.height = window.innerHeight;
+        render.options.width = window.innerWidth;
+        render.options.height = window.innerHeight;
+
+        // Eliminar paredes viejas si existen
+        if (ground) {
+            Composite.remove(world, [ground, wallLeft, wallRight]);
+        }
+
+        // Crear nuevas paredes con las dimensiones de la ventana
+        const wallOptions = { isStatic: true, render: { visible: false } };
+        const newWidth = window.innerWidth;
+        const newHeight = window.innerHeight;
+
+        ground = Bodies.rectangle(newWidth / 2, newHeight + (wallThickness / 2), newWidth, wallThickness, wallOptions);
+        wallLeft = Bodies.rectangle(-(wallThickness / 2), newHeight / 2, wallThickness, newHeight, wallOptions);
+        wallRight = Bodies.rectangle(newWidth + (wallThickness / 2), newHeight / 2, wallThickness, newHeight, wallOptions);
+
+        Composite.add(world, [ground, wallLeft, wallRight]);
     }
 
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas(); // Llamada inicial
+    window.addEventListener('resize', setupResponsiveCanvas);
+    setupResponsiveCanvas(); // Llamada inicial para configurar el escenario
 });
