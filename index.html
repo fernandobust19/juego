@@ -31,7 +31,24 @@
     </style>
 </head>
 <body>
-    <div class="info">
+    <button id="btn-nueva-figura" style="
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(90deg, #ff5f6d, #ffc371);
+        color: #fff;
+        font-size: 1.1em;
+        font-family: 'Segoe UI', sans-serif;
+        border: none;
+        border-radius: 24px;
+        padding: 12px 32px;
+        box-shadow: 0 4px 16px #0003;
+        cursor: pointer;
+        z-index: 10;
+        transition: background 0.2s;
+    ">Nueva figura</button>
+    <div class="info" style="top: 70px;">
         <p>Arrastra las figuras. Haz clic para rotarlas.</p>
     </div>
     <!-- Incluimos la biblioteca de física Matter.js -->

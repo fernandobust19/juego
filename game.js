@@ -47,17 +47,71 @@ document.addEventListener('DOMContentLoaded', () => {
     // Función para obtener una posición X aleatoria dentro del canvas actual
     const getRandomX = () => Math.random() * (render.options.width - 100) + 50;
 
+
     // Crear las 10 figuras geométricas
     const figuras = [];
 
-    // 1. Cuadrado
-    figuras.push(Bodies.rectangle(getRandomX(), 100, 80, 80, { render: { fillStyle: getRandomColor() } }));
+    // Función para crear una figura geométrica aleatoria
+    function crearFiguraAleatoria() {
+        const tipo = Math.floor(Math.random() * 10);
+        const color = getRandomColor();
+        const sombra = {
+            fillStyle: color,
+            shadowColor: color,
+            shadowBlur: 24,
+            strokeStyle: '#fff',
+            lineWidth: 2
+        };
+        switch (tipo) {
+            case 0: // Cuadrado
+                return Bodies.rectangle(getRandomX(), 80, 80, 80, { render: sombra });
+            case 1: // Círculo
+                return Bodies.circle(getRandomX(), 80, 40, { render: sombra });
+            case 2: // Rectángulo
+                return Bodies.rectangle(getRandomX(), 80, 100, 60, { render: sombra });
+            case 3: // Triángulo
+                return Bodies.fromVertices(getRandomX(), 80, [
+                    { x: 0, y: -45 }, { x: 45, y: 45 }, { x: -45, y: 45 }
+                ], { render: sombra }, true);
+            case 4: // Pentágono
+                return Bodies.polygon(getRandomX(), 80, 5, 45, { render: sombra });
+            case 5: // Hexágono
+                return Bodies.polygon(getRandomX(), 80, 6, 40, { render: sombra });
+            case 6: // Octágono
+                return Bodies.polygon(getRandomX(), 80, 8, 38, { render: sombra });
+            case 7: // Estrella
+                // Estrella de 5 puntas
+                const star = [];
+                for (let i = 0; i < 10; i++) {
+                    const r = i % 2 === 0 ? 40 : 18;
+                    const a = Math.PI * 2 * i / 10 - Math.PI / 2;
+                    star.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+                }
+                return Bodies.fromVertices(getRandomX(), 80, [star], { render: sombra }, true);
+            case 8: // L
+                return Bodies.fromVertices(getRandomX(), 80, [[
+                    { x: -40, y: -40 }, { x: 0, y: -40 }, { x: 0, y: 40 }, { x: 40, y: 40 }, { x: 40, y: 80 }, { x: -40, y: 80 }
+                ]], { render: sombra }, true);
+            case 9: // Trapecio
+                return Bodies.fromVertices(getRandomX(), 80, [[
+                    { x: -40, y: 40 }, { x: 40, y: 40 }, { x: 25, y: -40 }, { x: -25, y: -40 }
+                ]], { render: sombra }, true);
+        }
+    }
 
-    // 2. Círculo
-    figuras.push(Bodies.circle(getRandomX(), 100, 40, { render: { fillStyle: getRandomColor() } }));
+    // Crear las 10 figuras iniciales
+    for (let i = 0; i < 10; i++) {
+        figuras.push(crearFiguraAleatoria());
+    }
 
-    // 3. Rectángulo (simulando el óvalo)
-    figuras.push(Bodies.rectangle(getRandomX(), 100, 100, 60, { render: { fillStyle: getRandomColor() } }));
+    // Agregar las figuras al mundo
+    Composite.add(world, figuras);
+
+    // Botón para crear una nueva figura
+    document.getElementById('btn-nueva-figura').onclick = () => {
+        const nueva = crearFiguraAleatoria();
+        Composite.add(world, nueva);
+    };
 
     // 4. Triángulo
     figuras.push(Bodies.polygon(getRandomX(), 100, 3, 50, { render: { fillStyle: getRandomColor() } }));
