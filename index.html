@@ -24,23 +24,33 @@
 			font-size: 2em;
 		}
 		#game-container {
-			background: #333;
-			padding: 20px;
-			border-radius: 16px;
-			box-shadow: 0 4px 24px #000a;
+			background: radial-gradient(ellipse at 60% 40%, #3a4a6a 80%, #222 100%);
+			padding: 0;
+			border-radius: 50%;
+			box-shadow: 0 4px 32px #000a, 0 0 0 8px #4fc3f7 inset;
 			margin-top: 20px;
-			max-width: 100vw;
+			max-width: 90vw;
+			max-height: 90vw;
+			width: 90vw;
+			height: 90vw;
+			min-width: 280px;
+			min-height: 280px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			position: relative;
+			overflow: hidden;
 		}
 		#game-board {
-			background: #111;
+			background: transparent;
 			display: block;
 			margin: 0 auto;
-			border: 2px solid #555;
-			border-radius: 8px;
-			width: 90vw;
-			max-width: 340px;
-			height: 70vw;
-			max-height: 600px;
+			border: none;
+			border-radius: 50%;
+			width: 88vw;
+			height: 88vw;
+			max-width: 320px;
+			max-height: 320px;
 			touch-action: manipulation;
 		}
 		#info {
@@ -53,14 +63,19 @@
 				font-size: 1.2em;
 			}
 			#game-container {
-				padding: 8px;
 				margin-top: 8px;
+				min-width: 180px;
+				min-height: 180px;
+				width: 98vw;
+				height: 98vw;
+				max-width: 98vw;
+				max-height: 98vw;
 			}
 			#game-board {
-				width: 98vw;
-				height: 120vw;
-				max-width: 100vw;
-				max-height: 90vh;
+				width: 96vw;
+				height: 96vw;
+				max-width: 96vw;
+				max-height: 96vw;
 			}
 		}
 	</style>
@@ -68,22 +83,23 @@
 <body>
 	<h1>Juego de Lógica: Figuras Geométricas</h1>
 	<div id="game-container">
-		<canvas id="game-board" width="300" height="500"></canvas>
-		<div id="info">Acomoda 20 figuras geométricas. Toca la figura para rotarla.</div>
+		<canvas id="game-board" width="320" height="320"></canvas>
+		<div id="info">Acomoda 20 figuras geométricas dentro de la pecera. Arrastra y suelta las figuras.</div>
 	</div>
 	<script src="game.js"></script>
 	<script>
-	// Ajustar el tamaño del canvas dinámicamente para móviles
+	// Ajustar el tamaño del canvas para que siempre sea circular y centrado
 	function resizeCanvas() {
+		const container = document.getElementById('game-container');
 		const canvas = document.getElementById('game-board');
-		let w = Math.min(window.innerWidth * 0.9, 340);
-		let h = Math.min(window.innerHeight * 0.7, 600);
+		let size = Math.min(window.innerWidth * 0.88, 320);
 		if(window.innerWidth < 600) {
-			w = window.innerWidth * 0.98;
-			h = window.innerHeight * 0.9;
+			size = Math.min(window.innerWidth * 0.96, window.innerHeight * 0.96);
 		}
-		canvas.width = w;
-		canvas.height = h;
+		container.style.width = size + 'px';
+		container.style.height = size + 'px';
+		canvas.width = size;
+		canvas.height = size;
 	}
 	window.addEventListener('resize', resizeCanvas);
 	window.addEventListener('orientationchange', resizeCanvas);
