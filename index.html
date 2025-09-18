@@ -1,109 +1,42 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Juego de Lógica - Figuras Geométricas</title>
-	<style>
-		body {
-			background: #222;
-			color: #fff;
-			font-family: Arial, sans-serif;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			margin: 0;
-			min-height: 100vh;
-			width: 100vw;
-			overflow-x: hidden;
-		}
-		h1 {
-			margin-top: 30px;
-			margin-bottom: 10px;
-			font-size: 2em;
-		}
-		#game-container {
-			background: radial-gradient(ellipse at 60% 40%, #3a4a6a 80%, #222 100%);
-			padding: 0;
-			border-radius: 50%;
-			box-shadow: 0 4px 32px #000a, 0 0 0 8px #4fc3f7 inset;
-			margin-top: 20px;
-			max-width: 90vw;
-			max-height: 90vw;
-			width: 90vw;
-			height: 90vw;
-			min-width: 280px;
-			min-height: 280px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			position: relative;
-			overflow: hidden;
-		}
-		#game-board {
-			background: transparent;
-			display: block;
-			margin: 0 auto;
-			border: none;
-			border-radius: 50%;
-			width: 88vw;
-			height: 88vw;
-			max-width: 320px;
-			max-height: 320px;
-			touch-action: manipulation;
-		}
-		#info {
-			margin-top: 16px;
-			font-size: 1.1em;
-			text-align: center;
-		}
-		@media (max-width: 600px) {
-			h1 {
-				font-size: 1.2em;
-			}
-			#game-container {
-				margin-top: 8px;
-				min-width: 180px;
-				min-height: 180px;
-				width: 98vw;
-				height: 98vw;
-				max-width: 98vw;
-				max-height: 98vw;
-			}
-			#game-board {
-				width: 96vw;
-				height: 96vw;
-				max-width: 96vw;
-				max-height: 96vw;
-			}
-		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Figuras con Física</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            overflow: hidden; /* Evita barras de scroll por el canvas */
+        }
+        canvas {
+            background-color: #ffffff;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .info {
+            position: absolute;
+            top: 20px;
+            font-family: 'Segoe UI', sans-serif;
+            color: #555;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+    </style>
 </head>
 <body>
-	<h1>Juego de Lógica: Figuras Geométricas</h1>
-	<div id="game-container">
-		<canvas id="game-board" width="320" height="320"></canvas>
-		<div id="info">Acomoda 20 figuras geométricas dentro de la pecera. Arrastra y suelta las figuras.</div>
-	</div>
-	<script src="game.js"></script>
-	<script>
-	// Ajustar el tamaño del canvas para que siempre sea circular y centrado
-	function resizeCanvas() {
-		const container = document.getElementById('game-container');
-		const canvas = document.getElementById('game-board');
-		let size = Math.min(window.innerWidth * 0.88, 320);
-		if(window.innerWidth < 600) {
-			size = Math.min(window.innerWidth * 0.96, window.innerHeight * 0.96);
-		}
-		container.style.width = size + 'px';
-		container.style.height = size + 'px';
-		canvas.width = size;
-		canvas.height = size;
-	}
-	window.addEventListener('resize', resizeCanvas);
-	window.addEventListener('orientationchange', resizeCanvas);
-	resizeCanvas();
-	</script>
+    <div class="info">
+        <p>Arrastra las figuras. Haz clic para rotarlas.</p>
+    </div>
+    <!-- Incluimos la biblioteca de física Matter.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+    <!-- Nuestro script del juego -->
+    <script src="game.js"></script>
 </body>
 </html>

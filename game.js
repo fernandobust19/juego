@@ -1,265 +1,162 @@
-// --- Interacción: arrastrar, soltar y rotar figuras ---
-let dragging = null;
-let offsetX = 0;
-let offsetY = 0;
+// Espera a que el DOM esté cargado para empezar
+document.addEventListener('DOMContentLoaded', () => {
+    // Módulos de Matter.js que usaremos
+    const { Engine, Render, Runner, Bodies, Composite, Mouse, MouseConstraint, Events, Body, Vertices } = Matter;
 
-canvas.addEventListener('mousedown', onPointerDown);
-canvas.addEventListener('touchstart', onPointerDown, { passive: false });
-canvas.addEventListener('mousemove', onPointerMove);
-canvas.addEventListener('touchmove', onPointerMove, { passive: false });
-canvas.addEventListener('mouseup', onPointerUp);
-canvas.addEventListener('mouseleave', onPointerUp);
-canvas.addEventListener('touchend', onPointerUp);
+    // --- Configuración del Escenario ---
+    const canvasWidth = 400; // Ancho reducido para adaptarse a móviles
+    const canvasHeight = 600; // Altura mantenida para un formato vertical
 
-function getPointerPos(evt) {
-    if (evt.touches && evt.touches.length > 0) {
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.touches[0].clientX - rect.left,
-            y: evt.touches[0].clientY - rect.top
-        };
-    } else {
-        const rect = canvas.getBoundingClientRect();
-        return {
-            x: evt.clientX - rect.left,
-            y: evt.clientY - rect.top
-        };
-    }
-}
+    // Crear el motor de física
+    const engine = Engine.create();
+    const world = engine.world;
 
-function figuraEnPunto(x, y) {
-    // Busca la figura más cercana bajo el puntero
-    for (let i = figuras.length - 1; i >= 0; i--) {
-        const f = figuras[i];
-        if (Math.hypot(f.x - x, f.y - y) < 32) return i;
-    }
-    return -1;
-}
-
-function onPointerDown(evt) {
-    evt.preventDefault();
-    const pos = getPointerPos(evt);
-    const idx = figuraEnPunto(pos.x, pos.y);
-    if (idx !== -1) {
-        // Si es doble click/tap rápido, rotar
-        if (evt.detail === 2 || (evt.touches && evt.touches.length === 2)) {
-            rotarFigura(idx);
-            drawBoard();
-            return;
+    // Crear el renderizador que dibujará en el canvas
+    const render = Render.create({
+        element: document.body,
+        engine: engine,
+        options: {
+            width: canvasWidth,
+            height: canvasHeight,
+            wireframes: false, // Para que las figuras tengan colores sólidos
+            background: '#ffffff'
         }
-        dragging = idx;
-        offsetX = figuras[idx].x - pos.x;
-        offsetY = figuras[idx].y - pos.y;
-        // Llevar figura al frente
-        const f = figuras.splice(idx, 1)[0];
-        figuras.push(f);
-        drawBoard();
-    }
-}
+    });
 
-function onPointerMove(evt) {
-    if (dragging === null) return;
-    evt.preventDefault();
-    const pos = getPointerPos(evt);
-    const f = figuras[dragging];
-    let newX = pos.x + offsetX;
-    let newY = pos.y + offsetY;
-    // Limitar dentro de la olla (boquete)
-    const radioFigura = 28;
-    let ang = Math.atan2(newY - PECERA_CY(), newX - PECERA_CX());
-    if (ang < 0) ang += 2 * Math.PI;
-    const angMin = Math.PI * 0.17;
-    const angMax = Math.PI * 1.83;
-    let dist = Math.hypot(newX - PECERA_CX(), newY - PECERA_CY());
-    if (ang < angMin || ang > angMax || dist + radioFigura > PECERA_RADIO()) {
-        // No dejar salir
-        return;
-    }
-    // Checar colisión con otras figuras
-    for (let i = 0; i < figuras.length; i++) {
-        if (i === dragging) continue;
-        let d = Math.hypot(figuras[i].x - newX, figuras[i].y - newY);
-        if (d < radioFigura * 1.7) return;
-    }
-    f.x = newX;
-    f.y = newY;
-    drawBoard();
-}
+    Render.run(render);
 
-function onPointerUp(evt) {
-    dragging = null;
-}
+    // Crear y ejecutar el corredor que actualiza el motor
+    const runner = Runner.create();
+    Runner.run(runner, engine);
 
-function rotarFigura(idx) {
-    // Agrega un ángulo de rotación a la figura
-    if (!figuras[idx].rot) figuras[idx].rot = 0;
-    figuras[idx].rot += Math.PI / 2;
-}
-// game.js
-// Lógica inicial para el juego de figuras geométricas
+    // --- Creación de los Cuerpos (Figuras y Límites) ---
 
+    // Crear el suelo y las paredes para que las figuras no se caigan
+    const wallOptions = {
+        isStatic: true, // Estático: no se mueve por la gravedad
+        render: { fillStyle: '#f0f2f5' } // Color que coincide con el fondo
+    };
+    Composite.add(world, [
+        // Suelo
+        Bodies.rectangle(canvasWidth / 2, canvasHeight, canvasWidth, 50, wallOptions),
+        // Pared izquierda
+        Bodies.rectangle(0, canvasHeight / 2, 50, canvasHeight, wallOptions),
+        // Pared derecha
+        Bodies.rectangle(canvasWidth, canvasHeight / 2, 50, canvasHeight, wallOptions)
+    ]);
 
-const canvas = document.getElementById('game-board');
-const ctx = canvas.getContext('2d');
-
-
-// --- NUEVA LÓGICA: piezas estáticas y arrastrables ---
-
-// Configuración del tablero circular (pecera)
-const PECERA_RADIO = () => canvas.width / 2 * 0.95; // 95% del radio del canvas
-const PECERA_CX = () => canvas.width / 2;
-const PECERA_CY = () => canvas.height / 2;
-
-// Estructura de figura: { tipo, color, x, y, enTablero }
-let figuras = [];
-
-// Inicializar 20 figuras dentro de la pecera, bien distribuidas y sin salir del borde
-function inicializarFiguras() {
-    figuras = [];
-    const tipos = ['circulo', 'cuadrado', 'octagono', 'estrella', 'ele'];
+    // Paleta de colores para las figuras
     const colores = [
-        '#FFB300', '#FF7043', '#29B6F6', '#AB47BC', '#66BB6A',
-        '#EC407A', '#FFA726', '#26C6DA', '#D4E157', '#8D6E63',
+        '#ff6347', '#4682b4', '#9370db', '#ffa500', '#3cb371',
+        '#ee82ee', '#20b2aa', '#cd5c5c', '#ffd700', '#6a5acd'
     ];
-    const radioFigura = 28; // radio máximo de cada figura
-    const total = 20;
-    let intentos = 0;
-    while (figuras.length < total && intentos < 1000) {
-        const tipo = tipos[Math.floor(Math.random() * tipos.length)];
-        const color = colores[Math.floor(Math.random() * colores.length)];
-        // Posición aleatoria dentro del círculo, dejando margen para no salir
-        let r = Math.random() * (PECERA_RADIO() - radioFigura - 6);
-        let theta = Math.random() * 2 * Math.PI;
-        let x = PECERA_CX() + r * Math.cos(theta);
-        let y = PECERA_CY() + r * Math.sin(theta);
-        // Verificar que no se salga del borde
-        if (Math.hypot(x - PECERA_CX(), y - PECERA_CY()) + radioFigura > PECERA_RADIO()) {
-            intentos++;
-            continue;
-        }
-        // Verificar que no se superponga mucho con otras figuras
-        let overlap = figuras.some(f => Math.hypot(f.x - x, f.y - y) < radioFigura * 1.7);
-        if (overlap) {
-            intentos++;
-            continue;
-        }
-        figuras.push({ tipo, color, x, y, enTablero: true });
-        intentos = 0;
-    }
-}
 
-function drawPecera() {
-    // Fondo circular con boquete arriba (olla)
-    ctx.save();
-    // Dibuja la "pecera" (olla) con boquete
-    ctx.beginPath();
-    // Arco inferior (de 30° a 330°)
-    ctx.arc(PECERA_CX(), PECERA_CY(), PECERA_RADIO(), Math.PI * 0.17, Math.PI * 1.83, false);
-    ctx.lineTo(PECERA_CX() + PECERA_RADIO() * Math.cos(Math.PI * 1.83), PECERA_CY() + PECERA_RADIO() * Math.sin(Math.PI * 1.83));
-    ctx.lineTo(PECERA_CX() + PECERA_RADIO() * Math.cos(Math.PI * 0.17), PECERA_CY() + PECERA_RADIO() * Math.sin(Math.PI * 0.17));
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(80,180,255,0.13)';
-    ctx.fill();
-    ctx.lineWidth = 7;
-    ctx.strokeStyle = '#4fc3f7';
-    ctx.stroke();
-    // Borde superior (boquete)
-    ctx.beginPath();
-    ctx.arc(PECERA_CX(), PECERA_CY(), PECERA_RADIO(), Math.PI * 0.17, Math.PI * 1.83, false);
-    ctx.lineWidth = 13;
-    ctx.strokeStyle = '#b3e5fc';
-    ctx.shadowColor = '#b3e5fc';
-    ctx.shadowBlur = 10;
-    ctx.stroke();
-    ctx.restore();
-}
+    // Función para obtener un color aleatorio
+    const getRandomColor = () => colores[Math.floor(Math.random() * colores.length)];
 
-function drawBoard() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawPecera();
-    // Dibujar figuras
-    for (const f of figuras) {
-        drawFigura(f);
-    }
-// Dibuja una figura geométrica bonita según su tipo
-function drawFigura(fig) {
-    const size = 28;
-    ctx.save();
-    ctx.translate(fig.x, fig.y);
-    ctx.rotate(fig.rot || 0);
-    ctx.shadowColor = '#222a';
-    ctx.shadowBlur = 8;
-    ctx.lineWidth = 3;
-    switch (fig.tipo) {
-        case 'circulo':
-            ctx.beginPath();
-            ctx.arc(0, 0, size, 0, 2 * Math.PI);
-            ctx.fillStyle = fig.color;
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.stroke();
-            break;
-        case 'cuadrado':
-            ctx.beginPath();
-            ctx.moveTo(-size, -size);
-            ctx.lineTo(size, -size);
-            ctx.lineTo(size, size);
-            ctx.lineTo(-size, size);
-            ctx.closePath();
-            ctx.fillStyle = fig.color;
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.stroke();
-            break;
-        case 'octagono':
-            ctx.beginPath();
-            for (let i = 0; i < 8; i++) {
-                let angle = Math.PI / 4 * i;
-                let px = size * 0.95 * Math.cos(angle);
-                let py = size * 0.95 * Math.sin(angle);
-                if (i === 0) ctx.moveTo(px, py);
-                else ctx.lineTo(px, py);
+    // Función para obtener una posición X aleatoria dentro del canvas
+    const getRandomX = () => Math.random() * (canvasWidth - 100) + 50;
+
+    // Crear las 10 figuras geométricas
+    const figuras = [];
+
+    // 1. Cuadrado
+    figuras.push(Bodies.rectangle(getRandomX(), 100, 80, 80, { render: { fillStyle: getRandomColor() } }));
+
+    // 2. Círculo
+    figuras.push(Bodies.circle(getRandomX(), 100, 40, { render: { fillStyle: getRandomColor() } }));
+
+    // 3. Rectángulo (simulando el óvalo)
+    figuras.push(Bodies.rectangle(getRandomX(), 100, 100, 60, { render: { fillStyle: getRandomColor() } }));
+
+    // 4. Triángulo
+    figuras.push(Bodies.polygon(getRandomX(), 100, 3, 50, { render: { fillStyle: getRandomColor() } }));
+
+    // 5. Trapecio
+    figuras.push(Bodies.trapezoid(getRandomX(), 100, 80, 80, 0.8, { render: { fillStyle: getRandomColor() } }));
+
+    // 6. Rombo (un cuadrado rotado)
+    const rombo = Bodies.rectangle(getRandomX(), 100, 70, 70, { render: { fillStyle: getRandomColor() } });
+    Body.rotate(rombo, Math.PI / 4);
+    figuras.push(rombo);
+
+    // 7. Pentágono
+    figuras.push(Bodies.polygon(getRandomX(), 50, 5, 45, { render: { fillStyle: getRandomColor() } }));
+
+    // 8. Hexágono
+    figuras.push(Bodies.polygon(getRandomX(), 50, 6, 50, { render: { fillStyle: getRandomColor() } }));
+
+    // 9. Estrella
+    const starVertices = Vertices.fromPath('50 0 61 35 98 35 68 57 79 91 50 70 21 91 32 57 2 35 39 35');
+    figuras.push(Bodies.fromVertices(getRandomX(), 50, [starVertices], {
+        render: { fillStyle: getRandomColor() }
+    }, true));
+
+    // 10. Cruz (cuerpo compuesto)
+    const parteVertical = Bodies.rectangle(0, 0, 30, 90);
+    const parteHorizontal = Bodies.rectangle(0, 0, 90, 30);
+    const cruz = Body.create({
+        parts: [parteVertical, parteHorizontal],
+        render: { fillStyle: getRandomColor() }
+    });
+    Body.setPosition(cruz, { x: getRandomX(), y: 50 });
+    figuras.push(cruz);
+
+    // Añadir todas las figuras al mundo
+    Composite.add(world, figuras);
+
+    // --- Interacción del Usuario ---
+
+    // Añadir control del ratón para poder arrastrar las figuras
+    const mouse = Mouse.create(render.canvas);
+    const mouseConstraint = MouseConstraint.create(engine, {
+        mouse: mouse,
+        constraint: {
+            stiffness: 0.2,
+            render: {
+                visible: false // No mostrar la línea de arrastre
             }
-            ctx.closePath();
-            ctx.fillStyle = fig.color;
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.stroke();
-            break;
-        case 'estrella':
-            ctx.beginPath();
-            for (let i = 0; i < 10; i++) {
-                let angle = Math.PI / 5 * i;
-                let r = i % 2 === 0 ? size : size * 0.45;
-                let px = r * Math.cos(angle - Math.PI / 2);
-                let py = r * Math.sin(angle - Math.PI / 2);
-                if (i === 0) ctx.moveTo(px, py);
-                else ctx.lineTo(px, py);
-            }
-            ctx.closePath();
-            ctx.fillStyle = fig.color;
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.stroke();
-            break;
-        case 'ele':
-            ctx.beginPath();
-            ctx.moveTo(-size * 0.7, -size * 0.7);
-            ctx.lineTo(size * 0.2, -size * 0.7);
-            ctx.lineTo(size * 0.2, -size * 0.1);
-            ctx.lineTo(size * 0.7, -size * 0.1);
-            ctx.lineTo(size * 0.7, size * 0.7);
-            ctx.lineTo(-size * 0.7, size * 0.7);
-            ctx.closePath();
-            ctx.fillStyle = fig.color;
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.stroke();
-            break;
-    }
-    ctx.restore();
-}
-}
+        }
+    });
 
-inicializarFiguras();
-drawBoard();
+    Composite.add(world, mouseConstraint);
+
+    // Mantener el renderizador sincronizado con el ratón
+    render.mouse = mouse;
+
+    // --- Lógica mejorada para rotar al hacer clic ---
+    let startBody = null;
+    let startPos = null;
+
+    Events.on(mouseConstraint, 'mousedown', (event) => {
+        // Guarda la figura y la posición al iniciar el clic
+        startBody = mouseConstraint.body;
+        startPos = event.mouse.position;
+    });
+
+    Events.on(mouseConstraint, 'mouseup', (event) => {
+        if (startBody) {
+            const endPos = event.mouse.position;
+            // Calcula la distancia que se movió el mouse
+            const distance = Math.hypot(endPos.x - startPos.x, endPos.y - startPos.y);
+
+            // Si el mouse casi no se movió y la figura es la misma, es un "clic"
+            if (mouseConstraint.body === startBody && distance < 5) {
+                // Rotamos la figura 45 grados sobre su propio eje
+                Body.rotate(startBody, Math.PI / 4);
+            }
+        }
+        // Limpia las variables
+        startBody = null;
+        startPos = null;
+    });
+
+    // Ajustar el canvas al tamaño de la ventana
+    function resizeCanvas() {
+        // Esta función puede expandirse en el futuro para un redimensionamiento dinámico
+        // Por ahora, el tamaño fijo funciona bien para el objetivo.
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas(); // Llamada inicial
+});
