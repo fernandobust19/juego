@@ -62,23 +62,31 @@ document.addEventListener('DOMContentLoaded', () => {
             strokeStyle: '#fff',
             lineWidth: 2
         };
+        // Propiedades físicas pesadas y poco elásticas
+        const fisica = {
+            render: sombra,
+            density: 0.08, // más pesado
+            restitution: 0.05, // poco rebote
+            friction: 0.8, // mucha fricción
+            frictionAir: 0.08 // fricción con el aire
+        };
         switch (tipo) {
             case 0: // Cuadrado
-                return Bodies.rectangle(getRandomX(), 80, 80, 80, { render: sombra });
+                return Bodies.rectangle(getRandomX(), 80, 80, 80, fisica);
             case 1: // Círculo
-                return Bodies.circle(getRandomX(), 80, 40, { render: sombra });
+                return Bodies.circle(getRandomX(), 80, 40, fisica);
             case 2: // Rectángulo
-                return Bodies.rectangle(getRandomX(), 80, 100, 60, { render: sombra });
+                return Bodies.rectangle(getRandomX(), 80, 100, 60, fisica);
             case 3: // Triángulo
                 return Bodies.fromVertices(getRandomX(), 80, [
                     { x: 0, y: -45 }, { x: 45, y: 45 }, { x: -45, y: 45 }
-                ], { render: sombra }, true);
+                ], fisica, true);
             case 4: // Pentágono
-                return Bodies.polygon(getRandomX(), 80, 5, 45, { render: sombra });
+                return Bodies.polygon(getRandomX(), 80, 5, 45, fisica);
             case 5: // Hexágono
-                return Bodies.polygon(getRandomX(), 80, 6, 40, { render: sombra });
+                return Bodies.polygon(getRandomX(), 80, 6, 40, fisica);
             case 6: // Octágono
-                return Bodies.polygon(getRandomX(), 80, 8, 38, { render: sombra });
+                return Bodies.polygon(getRandomX(), 80, 8, 38, fisica);
             case 7: // Estrella
                 // Estrella de 5 puntas
                 const star = [];
@@ -87,15 +95,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     const a = Math.PI * 2 * i / 10 - Math.PI / 2;
                     star.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
                 }
-                return Bodies.fromVertices(getRandomX(), 80, [star], { render: sombra }, true);
+                return Bodies.fromVertices(getRandomX(), 80, [star], fisica, true);
             case 8: // L
                 return Bodies.fromVertices(getRandomX(), 80, [[
                     { x: -40, y: -40 }, { x: 0, y: -40 }, { x: 0, y: 40 }, { x: 40, y: 40 }, { x: 40, y: 80 }, { x: -40, y: 80 }
-                ]], { render: sombra }, true);
+                ]], fisica, true);
             case 9: // Trapecio
                 return Bodies.fromVertices(getRandomX(), 80, [[
                     { x: -40, y: 40 }, { x: 40, y: 40 }, { x: 25, y: -40 }, { x: -25, y: -40 }
-                ]], { render: sombra }, true);
+                ]], fisica, true);
         }
     }
 
